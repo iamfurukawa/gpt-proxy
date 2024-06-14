@@ -33,12 +33,21 @@ class handler(BaseHTTPRequestHandler):
                 messages=messages
             )
 
+            # Collect all completions and try to parse them as JSON
+            responses = []
+            for choice in completion.choices:
+                try:
+                    response_content = json.loads(choice.message.content)
+                except json.JSONDecodeError:
+                    response_content = choice.message.content
+                responses.append(response_content)
+
             # Send the response
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             response = {
-                "completion": completion
+                "responses": responses
             }
             self.wfile.write(json.dumps(response).encode('utf-8'))
 
