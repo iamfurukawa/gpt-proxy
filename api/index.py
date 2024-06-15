@@ -16,7 +16,6 @@ api_keys = {
     "123456": "vinicius.carvalho@opus-software.com.br"
 }
 
-# Endpoint de autenticação
 @app.route('/auth', methods=['POST'])
 def authenticate():
     data = request.json
@@ -64,7 +63,7 @@ def completion():
                 response_content = choice.message.content
             responses.append(response_content)
         
-        return jsonify({"responses": {responses}})
+        return jsonify({"responses": responses})
 
     except Exception as e:
         print(e)
