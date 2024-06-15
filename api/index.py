@@ -35,7 +35,7 @@ def authenticate():
 
 @app.route('/completion', methods=['POST'])
 def completion():
-    api_key = request.headers.get('api-key')
+    api_key = request.headers.get('apiKey')
     if api_key not in api_keys:
         return jsonify({"error": "Invalid API key"}), 403
     
