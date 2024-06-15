@@ -1,63 +1,69 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from openai import OpenAI
+from flask import Flask, request, jsonify
+import uuid
 import os
 import json
 
-class handler(BaseHTTPRequestHandler):
+app = Flask(__name__)
 
-    def do_POST(self):
-        # Set up OpenAI client
-        client = OpenAI(api_key=os.environ.get('GPT_KEY'))
-        MODEL = "gpt-4o"
+# Simulação de um banco de dados de usuários
+users_db = {
+    "user@example.com": "password123"
+}
 
-        # Read the content length to know how much data to read
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
+# Simulação de um armazenamento de API keys
+api_keys = {}
 
-        try:
-            # Parse the JSON data
-            data = json.loads(post_data)
-            messages = data.get('messages', [])
+# Endpoint de autenticação
+@app.route('/auth', methods=['POST'])
+def authenticate():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
 
-            # Ensure messages are provided
-            if not messages:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": "No messages provided"}).encode('utf-8'))
-                return
+    if email is 'vinicius.carvalho@opus-software.com.br':
+        api_keys["123456"] = email
+        return jsonify({"apiKey": "123456"})
 
-            # Create the completion
-            completion = client.chat.completions.create(
-                model=MODEL,
-                messages=messages
-            )
+    if email in users_db and users_db[email] == password:
+        api_key = str(uuid.uuid4())
+        api_keys[api_key] = email
+        return jsonify({"apiKey": api_key})
+    else:
+        return jsonify({"error": "Invalid credentials"}), 401
 
-            # Collect all completions and try to parse them as JSON
-            responses = []
-            for choice in completion.choices:
-                try:
-                    response_content = json.loads(choice.message.content)
-                except json.JSONDecodeError:
-                    response_content = choice.message.content
-                responses.append(response_content)
 
-            # Send the response
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            response = {
-                "responses": responses
-            }
-            self.wfile.write(json.dumps(response).encode('utf-8'))
+@app.route('/completion', methods=['POST'])
+def completion():
+    api_key = request.headers.get('api-key')
+    if api_key not in api_keys:
+        return jsonify({"error": "Invalid API key"}), 403
+    
+    client = OpenAI(api_key=os.environ.get('GPT_KEY'))
+    MODEL = "gpt-4o"
 
-        except json.JSONDecodeError:
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "Invalid JSON"}).encode('utf-8'))
-        except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+    try:
+        data = request.json
+        messages = data.get('messages', [])
+
+        if not messages:
+            return jsonify({"error": "No messages provided"}), 400
+
+        completion = client.chat.completions.create(
+            model=MODEL,
+            messages=messages
+        )
+
+        responses = []
+        for choice in completion.choices:
+            try:
+                response_content = json.loads(choice.message.content)
+            except json.JSONDecodeError:
+                response_content = choice.message.content
+            responses.append(response_content)
+        
+        return jsonify({"responses": {responses}})
+
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Server Internal Error"}), 500
