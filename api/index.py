@@ -12,7 +12,9 @@ users_db = {
 }
 
 # Simulação de um armazenamento de API keys
-api_keys = {}
+api_keys = {
+    "123456": "vinicius.carvalho@opus-software.com.br"
+}
 
 # Endpoint de autenticação
 @app.route('/auth', methods=['POST'])
