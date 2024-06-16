@@ -22,7 +22,7 @@ def authenticate():
     email = data.get('email')
     password = data.get('password')
 
-    if email is 'vinicius.carvalho@opus-software.com.br':
+    if email == 'vinicius.carvalho@opus-software.com.br':
         api_keys["123456"] = email
         return jsonify({"apiKey": "123456"})
 
